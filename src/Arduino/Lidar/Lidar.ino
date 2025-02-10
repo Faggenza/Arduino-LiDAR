@@ -73,10 +73,10 @@ void loop() {
      }
      Serial.print("A");
      for (int i =0; i<m; i++){
+      Serial.print(",");
       Serial.print(angleVect[i]);
       Serial.print(",");
       Serial.print(distanceVect[i]);
-      Serial.print(",");
      }
      Serial.println();
     }
