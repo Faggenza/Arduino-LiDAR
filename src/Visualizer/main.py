@@ -14,14 +14,14 @@ class DataVisualizer:
         self.canvas = FigureCanvasTkAgg(self.figure, master=root)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        #self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=None)
+        self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=None)
         
         self.canvas.mpl_connect("motion_notify_event", self.on_hover)
         
         self.update_plot()
     
     def update_plot(self):
-        data = [(0, 43), (30, 23), (60, 65), (90, 23), (120, 98), (150, 12)] #self.read_serial_data()
+        data = self.read_serial_data()
         if data:
             angles, distances = zip(*data)
             angles = [math.radians(angle) for angle in angles]
@@ -31,15 +31,17 @@ class DataVisualizer:
         
         self.root.after(100, self.update_plot)
     
-    # def read_serial_data(self):
-    #     line = self.serial_port.readline().decode('utf-8').strip()
-    #     if line:
-    #         try:
-    #             data = eval(line)
-    #             return data
-    #         except:
-    #             return None
-    #     return None
+    def read_serial_data(self):
+        line = self.serial_port.readline().decode('utf-8').strip()
+        if line:
+            try:
+                data = line.split(',')
+                formatted_data = [(float(data[i]), float(data[i+1])) for i in range(0, len(data), 2)]
+                print(formatted_data)
+                return formatted_data
+            except:
+                return None
+        return None
     
     def on_hover(self, event):
         if event.inaxes == self.ax:
