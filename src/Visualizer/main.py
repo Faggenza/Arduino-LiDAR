@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
-import serial
+import serial.tools.list_ports
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import math
-import random
 
 class DataVisualizer:
     def __init__(self, root):
@@ -12,11 +11,11 @@ class DataVisualizer:
         self.root.title("LiDAR Data Visualizer")
         
         self.figure, self.ax = plt.subplots(subplot_kw={'projection': 'polar'})
-        self.ax.set_ylim(0, 8000)
+        self.ax.set_ylim(0, 1000)
         self.canvas = FigureCanvasTkAgg(self.figure, master=root)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        #self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=None)
+        self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=0.5)
         
         self.canvas.mpl_connect("motion_notify_event", self.on_hover)
         
@@ -27,8 +26,7 @@ class DataVisualizer:
         self.annotation.set_visible(False)
         
         self.scatter = None
-        self.data_dict = {i: None for i in range(36000)}
-        self.j = 0 
+        self.data_dict = [None] * 36000
         
         self.update_plot()
     
@@ -38,29 +36,21 @@ class DataVisualizer:
             for angle, distance in data:
                 self.data_dict[int(angle*100)] = distance
 
-            filtered_data = [(index / 100, distance) for index, distance in self.data_dict.items() if distance is not None]
+            filtered_data = [(i / 100, self.data_dict[i]) for i in range(len(self.data_dict)) if self.data_dict[i] is not None]
+            print("Filetered data: ", filtered_data)
             if filtered_data:
                 angles, distances = zip(*filtered_data)
                 angles = [math.radians(angle) for angle in angles]
                 self.ax.clear()
-                self.ax.set_ylim(0, 8000)  # Ensure the maximum distance is set after clearing the plot
+                self.ax.set_ylim(0, 1000) 
                 self.scatter = self.ax.scatter(angles, distances)
                 self.canvas.draw()
         
         self.root.after(100, self.update_plot)
     
     def read_serial_data(self):
-        #line = self.serial_port.readline().decode('utf-8').strip()
-        sample_data = []
-        random.seed()
-        sparse_data = []
-        for _ in range(10):
-            angle = random.uniform(0, 360)
-            distance = random.uniform(3000, 3100)
-            sparse_data.append(f"{angle:.2f},{distance:.2f}")
-        sample_data.append("A," + ",".join(sparse_data))
-        line = sample_data[self.j]
-        self.j = (self.j + 1) % len(sample_data)      
+        line = self.serial_port.readline().decode('utf-8').strip()
+        
         if line and line.startswith('A'):      
             try:
                 data = line[2:].split(',')

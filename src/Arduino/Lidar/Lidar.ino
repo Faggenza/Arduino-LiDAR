@@ -1,11 +1,3 @@
-#include "esp32-hal-log.h"
-#ifdef CORE_DEBUG_LEVEL
-#undef CORE_DEBUG_LEVEL
-#endif
-
-#define CORE_DEBUG_LEVEL 3
-#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
-
 #define FRAME_LENGTH        256
 #define rxPin               16
 #define txPin               17
@@ -16,12 +8,11 @@
 #define DISTANCE_RESOLUTION (float)0.25 //Moltiplicatore per distanza misurata, in mm
 
 uint8_t frame[FRAME_LENGTH];
+long current_millis = 0;
 
 void setup() {
   Serial.begin(230400);
-  Serial.setDebugOutput(true);
 
-  esp_log_level_set("*", ESP_LOG_VERBOSE);
   memset(frame, 0, 256); //imposta tutti i valori del frame a 0
   
   pinMode(rxPin, INPUT);
@@ -31,9 +22,11 @@ void setup() {
 }
 
 void loop() {
+  memset(frame, 0, 256);
   getData();
-   if ( !checkCommandWord() ){
-    if( crcCheck() ){
+  printFrame();
+   if (!checkCommandWord()){
+    if(!crcCheck()){
       //printFrame();
       //Frame con info e crc corretto
       //parsing pacchetto, calcolo angolo=startAngle+22.5*N/M
@@ -71,14 +64,14 @@ void loop() {
       distance = distance | frame[15 + 3*n];
       distanceVect[n]= distance * DISTANCE_RESOLUTION;
      }
-     Serial.print("A");
-     for (int i =0; i<m; i++){
-      Serial.print(",");
-      Serial.print(angleVect[i]);
-      Serial.print(",");
-      Serial.print(distanceVect[i]);
-     }
-     Serial.println();
+//     Serial.print("A");
+//     for (int i =0; i<m; i++){
+//      Serial.print(",");
+//      Serial.print(angleVect[i]);
+//      Serial.print(",");
+//      Serial.print(distanceVect[i]);
+//     }
+//     Serial.println();
     }
    }
    
@@ -88,20 +81,29 @@ void loop() {
 // 0 crc corretto, 1 errore
 int crcCheck(){
   //frame length
+
   uint16_t l = frame[1];
   l <<= 8;
   l = l | frame[2];
   
+  uint16_t crc = frame[l];
+  crc <<= 8;
+  crc = crc | frame[l+1]; 
+  
   uint16_t somma = 0;
+  
   for (int i=0; i<l ;i++){
     somma += frame[i];
   }
-  uint16_t crc = frame[l];
-  crc <<= 8;
-  crc = crc | frame[l+1];
+  //Serial.println(somma);
+  delay(10);
   if (crc == somma){
+    Serial.println("CRC Corretto");
     return 0;
-  }else return 1;
+  }else {
+    //Serial.println("CRC Non Corretto");
+    return 1;
+  }
 }
 int getData(){
   while(Serial2.available()) {
