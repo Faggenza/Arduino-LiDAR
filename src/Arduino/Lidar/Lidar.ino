@@ -23,8 +23,6 @@ void setup() {
 void loop() {
   memset(frame, 0, 256); //imposta il frame a 0 per una nuova acquisizione
   if( !getData() ){ //passa se l'acquisizione avviene correttamente
-    delay(10);
-
      if (!checkCommandWord()){ //passa se trova 173 al command word
       if(!crcCheck()){ //passa solo al crc corretto 
        //parsing pacchetto, calcolo angolo=startAngle+22.5*N/M
@@ -97,22 +95,40 @@ int crcCheck(){
     //Serial.println("CRC Corretto");
     return 0;
   }else {
-    //Serial.println("CRC Non Corretto");
+    Serial.println("CRC Non Corretto");
     return 1;
   }
 }
 
 int getData(){
-  while(Serial2.available()) {
-    if (Serial2.read() == (frame[0] = 170)){
-      for (int i=1; i!=FRAME_LENGTH; i++){ //16 frame per pacchetto e 16 pacchetti per rotazione
-        frame[i] = Serial2.read();
-      }
-      return 0;
-    }
+  while(Serial2.read() != (frame[0] = 170));
+  int i = 1;
+  uint16_t N = 256;
+  while (i<=N){
+        while(!Serial2.available()); 
+          frame[i] = Serial2.read();
+          if (i == 2) {
+            N=frame[1]<<8 | frame[2];
+          }
+          if (i == 3 && frame[3]!=1 ) return 1;
+          if (i == 4 && frame[4]!=97 ) return 1;
+          i++;
   }
+  return 0;
 }
 
+//int getData2(){
+//  while(Serial2.available()) {
+//    if (Serial2.read() == (frame[0] = 170)){
+//      for (int i=1; i<FRAME_LENGTH; i++){ //16 frame per pacchetto e 16 pacchetti per rotazione
+//        while(!Serial2.available());
+//        frame[i] = Serial2.read();
+//      }
+//      return 0; //Dati ritornati correttamente
+//    }
+//  }
+//  return 1; //Seriale non disponibile
+//}
 void printFrame(){
   Serial.print("Frame: ");
   for (int i=0; i<FRAME_LENGTH; i++){

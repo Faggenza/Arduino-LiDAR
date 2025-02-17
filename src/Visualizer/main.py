@@ -16,7 +16,7 @@ class DataVisualizer:
         self.canvas = FigureCanvasTkAgg(self.figure, master=root)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=None)
+        #self.serial_port = serial.Serial('/dev/ttyUSB0', 230400, timeout=None)
         
         self.canvas.mpl_connect("motion_notify_event", self.on_hover)
         
@@ -52,7 +52,8 @@ class DataVisualizer:
         self.root.after(1, self.update_plot)
     
     def read_serial_data(self):
-        line = self.serial_port.readline().decode('utf-8').strip()
+        #line = self.serial_port.readline().decode('utf-8').strip()
+        line = "A,0.0,100.0,90.0,200.0,180.0,300.0,270.0,400.0"
         if line and line.startswith('A'):      
             try:
                 data = line[2:].split(',')
