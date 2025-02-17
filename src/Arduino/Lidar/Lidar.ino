@@ -8,7 +8,6 @@
 #define DISTANCE_RESOLUTION (float)0.25 //Moltiplicatore per distanza misurata, in mm
 
 uint8_t frame[FRAME_LENGTH];
-long current_millis = 0;
 
 void setup() {
   Serial.begin(230400);
@@ -22,59 +21,58 @@ void setup() {
 }
 
 void loop() {
-  memset(frame, 0, 256);
-  getData();
-  printFrame();
-   if (!checkCommandWord()){
-    if(!crcCheck()){
-      //printFrame();
-      //Frame con info e crc corretto
-      //parsing pacchetto, calcolo angolo=startAngle+22.5*N/M
-      // M=(PayloadL-5)/3          N è l'indice del sample nel pacchetto
-     uint16_t payloadLength = frame[6];
-     payloadLength <<= 8;
-     payloadLength = payloadLength | frame[7]; //payload length
+  memset(frame, 0, 256); //imposta il frame a 0 per una nuova acquisizione
+  if( !getData() ){ //passa se l'acquisizione avviene correttamente
+    delay(10);
 
-     uint16_t m = (payloadLength - 5) / 3; //numero di campioni nel paylaod
-
-     //Da qui siamo nel paylaod
-     //float rps = (uint8_t)frame[8]/(float)20.0f; //RPS o RPM per rotazioni al secondo o al minuto
-     //ESP_LOGI("Info pacchetto", "%f r/s", rps);
-     //9 10 due byte inutili
-     //11 12 sono lo start angle di tutti i sample del frame
-     uint16_t startAngle = frame[11];
-     startAngle <<= 8;
-     startAngle = startAngle | frame[12];
-     float startAngleFloat = (float)startAngle / 100;
-     //ESP_LOGI("Start Angle", "%d gradi", startAngleFloat);
-
-     float rps = frame[8] * RPS;
-     //itero tutti i campioni per ottenere informazioni su angolo e distanza
-     //li iteriamo su N fino a M e abbiamo:
-     // Angle = startAngle + 22.5/m * N
-     // Distance = frame[14 + 3N, 15 + 3N] * 0.25 (mm)
-
-     //vettori angolo, distanza
-     float angleVect[m];
-     float distanceVect[m];
-     for (int n=0; n<=m; n++){
-      angleVect[n] = startAngleFloat + 22.5f / m * n;
-      uint16_t distance = frame[14 + 3*n];
-      distance <<= 8;
-      distance = distance | frame[15 + 3*n];
-      distanceVect[n]= distance * DISTANCE_RESOLUTION;
+     if (!checkCommandWord()){ //passa se trova 173 al command word
+      if(!crcCheck()){ //passa solo al crc corretto 
+       //parsing pacchetto, calcolo angolo=startAngle+22.5*N/M
+       // M=(PayloadL-5)/3          N è l'indice del sample nel pacchetto
+       uint16_t payloadLength = frame[6];
+       payloadLength <<= 8;
+       payloadLength = payloadLength | frame[7]; //payload length
+  
+       uint16_t m = (payloadLength - 5) / 3; //numero di campioni nel paylaod
+  
+       //Da qui siamo nel paylaod
+       //float rps = (uint8_t)frame[8]/(float)20.0f; //RPS o RPM per rotazioni al secondo o al minuto
+       //ESP_LOGI("Info pacchetto", "%f r/s", rps);
+       //9 10 due byte inutili
+       //11 12 sono lo start angle di tutti i sample del frame
+       uint16_t startAngle = frame[11];
+       startAngle <<= 8;
+       startAngle = startAngle | frame[12];
+       float startAngleFloat = (float)startAngle / 100;
+       //ESP_LOGI("Start Angle", "%d gradi", startAngleFloat);
+  
+       float rps = frame[8] * RPS;
+       //itero tutti i campioni per ottenere informazioni su angolo e distanza
+       //li iteriamo su N fino a M e abbiamo:
+       // Angle = startAngle + 22.5/m * N
+       // Distance = frame[14 + 3N, 15 + 3N] * 0.25 (mm)
+  
+       //vettori angolo, distanza
+       float angleVect[m];
+       float distanceVect[m];
+       for (int n=0; n<=m; n++){
+        angleVect[n] = startAngleFloat + 22.5f / m * n;
+        uint16_t distance = frame[14 + 3*n];
+        distance <<= 8;
+        distance = distance | frame[15 + 3*n];
+        distanceVect[n]= distance * DISTANCE_RESOLUTION;
+       }
+       Serial.print("A");
+       for (int i =0; i<m; i++){
+        Serial.print(",");
+        Serial.print(angleVect[i]);
+        Serial.print(",");
+        Serial.print(distanceVect[i]);
+       }
+       Serial.println();
+      }
      }
-//     Serial.print("A");
-//     for (int i =0; i<m; i++){
-//      Serial.print(",");
-//      Serial.print(angleVect[i]);
-//      Serial.print(",");
-//      Serial.print(distanceVect[i]);
-//     }
-//     Serial.println();
-    }
-   }
-   
+  }
 }
 
 //controlla CRC con somma cumulativa a 16 bit,
@@ -95,16 +93,15 @@ int crcCheck(){
   for (int i=0; i<l ;i++){
     somma += frame[i];
   }
-  //Serial.println(somma);
-  delay(10);
   if (crc == somma){
-    Serial.println("CRC Corretto");
+    //Serial.println("CRC Corretto");
     return 0;
   }else {
     //Serial.println("CRC Non Corretto");
     return 1;
   }
 }
+
 int getData(){
   while(Serial2.available()) {
     if (Serial2.read() == (frame[0] = 170)){
@@ -114,7 +111,6 @@ int getData(){
       return 0;
     }
   }
-  return 1;  
 }
 
 void printFrame(){
