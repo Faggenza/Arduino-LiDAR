@@ -1,6 +1,5 @@
 #define FRAME_LENGTH        256
 #define rxPin               16
-#define txPin               17
 
 #define RPS                 (float)0.05  //Per avere le rotazioni al secondo
 #define RPM                 (int)3     //Per avere le rotazioni al minuto
@@ -15,15 +14,14 @@ void setup() {
   memset(frame, 0, 256); //imposta tutti i valori del frame a 0
   
   pinMode(rxPin, INPUT);
-  pinMode(txPin, OUTPUT);
   
-  Serial2.begin(230400, SERIAL_8N1, rxPin, txPin); //8bit, 1 bit stop, 0 bit parità
+  Serial2.begin(230400, SERIAL_8N1, rxPin); //8bit, 1 bit stop, 0 bit parità
 }
 
 void loop() {
   memset(frame, 0, 256); //imposta il frame a 0 per una nuova acquisizione
   if( !getData() ){ //passa se l'acquisizione avviene correttamente
-     if (!checkCommandWord()){ //passa se trova 173 al command word
+    if (!checkCommandWord()){ //passa se trova 173 al command word
       if(!crcCheck()){ //passa solo al crc corretto 
        //parsing pacchetto, calcolo angolo=startAngle+22.5*N/M
        // M=(PayloadL-5)/3          N è l'indice del sample nel pacchetto
@@ -69,6 +67,13 @@ void loop() {
        }
        Serial.println();
       }
+     }else{
+        //Pacchetto di tipo AE, errore sensore
+        if ( !crcCheck() ){
+        float rps = frame[8] * RPS;
+        Serial.print("E");
+        Serial.println(rps); //rotazioni al secondo
+        }
      }
   }
 }
@@ -76,8 +81,8 @@ void loop() {
 //controlla CRC con somma cumulativa a 16 bit,
 // 0 crc corretto, 1 errore
 int crcCheck(){
+  
   //frame length
-
   uint16_t l = frame[1];
   l <<= 8;
   l = l | frame[2];
@@ -95,7 +100,7 @@ int crcCheck(){
     //Serial.println("CRC Corretto");
     return 0;
   }else {
-    Serial.println("CRC Non Corretto");
+    //Serial.println("CRC Non Corretto");
     return 1;
   }
 }
@@ -104,31 +109,19 @@ int getData(){
   while(Serial2.read() != (frame[0] = 170));
   int i = 1;
   uint16_t N = 256;
-  while (i<=N){
-        while(!Serial2.available()); 
-          frame[i] = Serial2.read();
-          if (i == 2) {
-            N=frame[1]<<8 | frame[2];
-          }
-          if (i == 3 && frame[3]!=1 ) return 1;
-          if (i == 4 && frame[4]!=97 ) return 1;
-          i++;
+  while (i<N+2){
+        while(!Serial2.available()); //bloccante se non ci sono dati pronti
+        frame[i] = Serial2.read();
+        if (i == 2) {
+          N=frame[1]<<8 | frame[2];
+        }
+        if (i == 3 && frame[3]!=1 ) return 1;
+        if (i == 4 && frame[4]!=97 ) return 1;
+        i++;
   }
   return 0;
 }
 
-//int getData2(){
-//  while(Serial2.available()) {
-//    if (Serial2.read() == (frame[0] = 170)){
-//      for (int i=1; i<FRAME_LENGTH; i++){ //16 frame per pacchetto e 16 pacchetti per rotazione
-//        while(!Serial2.available());
-//        frame[i] = Serial2.read();
-//      }
-//      return 0; //Dati ritornati correttamente
-//    }
-//  }
-//  return 1; //Seriale non disponibile
-//}
 void printFrame(){
   Serial.print("Frame: ");
   for (int i=0; i<FRAME_LENGTH; i++){
