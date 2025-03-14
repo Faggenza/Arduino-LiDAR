@@ -33,7 +33,6 @@ void loop() {
   
        //Da qui siamo nel paylaod
        //float rps = (uint8_t)frame[8]/(float)20.0f; //RPS o RPM per rotazioni al secondo o al minuto
-       //ESP_LOGI("Info pacchetto", "%f r/s", rps);
        //9 10 due byte inutili
        //11 12 sono lo start angle di tutti i sample del frame
        uint16_t startAngle = frame[11];
@@ -97,10 +96,8 @@ int crcCheck(){
     somma += frame[i];
   }
   if (crc == somma){
-    //Serial.println("CRC Corretto");
     return 0;
   }else {
-    //Serial.println("CRC Non Corretto");
     return 1;
   }
 }
