@@ -70,9 +70,9 @@ void loop() {
      }else{
         //Pacchetto di tipo AE, errore sensore
         if ( !crcCheck() ){
-        float rps = frame[8] * RPS;
-        Serial.print("E");
-        Serial.println(rps); //rotazioni al secondo
+          float rps = frame[8] * RPS;
+          Serial.print("E");
+          Serial.println(rps); //rotazioni al secondo
         }
      }
   }
