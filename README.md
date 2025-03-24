@@ -1,6 +1,6 @@
 # Arduino-LiDAR 🤖
 
-This university project aims to develop an Arduino-based platform to control the LiDAR Delta-2A from 3irobotix, enabling the scanning of small areas.
+This university project, created for the **Advanced Data Acquisition/Distributed Measurement** and Data Acquisition Systems course at **Bari's Polytechnic**, aims to develop an Arduino-based platform to control the LiDAR Delta-2A from 3irobotix, enabling the scanning of small areas.
 
 ## Features 🔥
 
@@ -30,3 +30,8 @@ This university project aims to develop an Arduino-based platform to control the
 
 After installation, the system will perform scans of the surrounding area using the LiDAR. The collected data can be used to create environmental maps. Using the visualizer scan map of surroundigs is created.
 
+## Project Members 👥
+
+- Francesco Faienza
+- Pantaleo Grosso
+- Walter Amicarelli
